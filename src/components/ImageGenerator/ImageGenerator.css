@@ -1,0 +1,318 @@
+.imggen-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  animation: fadeUp 0.4s ease;
+}
+
+.imggen-hero {
+  text-align: center;
+}
+
+.imggen-hero-icon {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.imggen-title {
+  font-size: 2rem;
+  font-weight: 800;
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0 0 0.4rem;
+}
+
+.imggen-subtitle {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+/* Controls row */
+.imggen-controls {
+  display: flex;
+  gap: 1rem;
+}
+
+.imggen-control-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.imggen-control-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.imggen-select {
+  width: 100%;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 0.55rem 0.85rem;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  backdrop-filter: blur(12px);
+}
+
+.imggen-select:focus { border-color: var(--accent); }
+.imggen-select:disabled { opacity: 0.5; }
+
+@media (max-width: 600px) {
+  .imggen-controls { flex-direction: column; }
+}
+
+/* Input area */
+.imggen-input-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.imggen-textarea {
+  width: 100%;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 1rem;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  backdrop-filter: blur(12px);
+  box-sizing: border-box;
+}
+
+.imggen-textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.imggen-textarea::placeholder { color: var(--text-muted); }
+.imggen-textarea:disabled { opacity: 0.5; }
+
+.imggen-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.85rem 2rem;
+  background: var(--accent-gradient);
+  border: none;
+  border-radius: 14px;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  letter-spacing: 0.02em;
+}
+
+.imggen-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(99, 102, 241, 0.4);
+}
+
+.imggen-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.imggen-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Progress bar */
+.imggen-progress-wrap {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.imggen-progress-bar {
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  background: var(--accent-gradient);
+  opacity: 0.18;
+  border-radius: 12px;
+  transition: width 0.6s ease;
+}
+
+.imggen-progress-text {
+  position: relative;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin: 0;
+}
+
+/* Error */
+.imggen-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  background: rgba(248, 113, 113, 0.1);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  border-radius: 12px;
+  padding: 1rem;
+  color: #f87171;
+  font-size: 0.85rem;
+}
+
+.imggen-error p { margin: 0; }
+
+.imggen-error-tip {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  margin-top: 0.25rem;
+}
+
+/* Regenerate button */
+.imggen-regen-btn {
+  background: var(--info-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 0.55rem 1.2rem;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  font-family: inherit;
+}
+
+.imggen-regen-btn:hover {
+  background: var(--btn-bg);
+  transform: translateY(-1px);
+}
+
+/* Result */
+.imggen-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  animation: fadeUp 0.5s ease;
+}
+
+.imggen-img-wrap {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.35);
+  width: 100%;
+  max-width: 600px;
+}
+
+.imggen-image {
+  width: 100%;
+  display: block;
+  border-radius: 20px;
+}
+
+.imggen-image--hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.imggen-image--visible {
+  display: none; /* handled by result card */
+}
+
+.imggen-img-overlay {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 1.5rem 1rem 1rem;
+  background: linear-gradient(transparent, rgba(0,0,0,0.7));
+  opacity: 0;
+  transition: opacity 0.25s;
+  display: flex;
+  justify-content: center;
+}
+
+.imggen-img-wrap:hover .imggen-img-overlay { opacity: 1; }
+
+.imggen-download-btn {
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 10px;
+  color: #fff;
+  padding: 0.6rem 1.2rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.imggen-download-btn:hover { background: rgba(255,255,255,0.25); }
+
+.imggen-prompt-label {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
+  max-width: 500px;
+  margin: 0;
+}
+
+/* Empty state */
+.imggen-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 3rem;
+  background: var(--card-bg);
+  border: 2px dashed var(--card-border);
+  border-radius: 20px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.imggen-empty-icon { font-size: 3rem; opacity: 0.3; }
+.imggen-empty p { margin: 0; font-size: 0.9rem; }
+.imggen-empty-tip { font-size: 0.78rem; opacity: 0.6; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 600px) {
+  .imggen-container { padding: 1rem 0; }
+  .imggen-title { font-size: 1.5rem; }
+}
