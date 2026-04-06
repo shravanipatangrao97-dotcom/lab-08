@@ -1,29 +1,24 @@
 import { useState, useRef, useEffect } from 'react';
 import './ImageGenerator.css';
+import './ImageGeneratorHistory.css';
 
-const HORDE_API   = 'https://stablehorde.net/api/v2';
-const ANON_KEY    = '0000000000'; // no account needed
+const HORDE_API = 'https://stablehorde.net/api/v2';
+const ANON_KEY = '0000000000';
 
-const STYLES = [
-  { label: 'None',           value: '' },
-  { label: 'Photorealistic', value: ', photorealistic, ultra detailed, 8K, high quality' },
-  { label: 'Digital Art',    value: ', digital art, artstation, vibrant colors, concept art' },
-  { label: 'Cinematic',      value: ', cinematic lighting, movie still, dramatic, 35mm film' },
-  { label: 'Anime',          value: ', anime style, studio ghibli, detailed illustration' },
-  { label: 'Oil Painting',   value: ', oil painting, impressionist, textured brushwork, museum quality' },
-];
-
-const SIZES = [
-  { label: '1:1 Square (512×512)',     w: 512,  h: 512  },
-  { label: '16:9 Wide (768×432)',      w: 768,  h: 432  },
-  { label: '9:16 Portrait (432×768)', w: 432,  h: 768  },
-];
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+// ✅ FIX: Handle both base64 and URL responses from AI Horde
+function buildImageSrc(img) {
+  if (!img) return null;
+  if (img.startsWith('http')) return img; // it's a URL
+  // it's a raw base64 string — add the data URI prefix
+  return `data:image/webp;base64,${img}`;
+}
+
 async function generateWithHorde(prompt, { w, h }, onStatus) {
-  // 1. Submit generation job
   onStatus('Submitting to AI Horde…');
+
   const submitRes = await fetch(`${HORDE_API}/generate/async`, {
     method: 'POST',
     headers: {
@@ -35,7 +30,7 @@ async function generateWithHorde(prompt, { w, h }, onStatus) {
       prompt,
       params: {
         n: 1,
-        width:  w,
+        width: w,
         height: h,
         steps: 20,
         sampler_name: 'k_euler',
@@ -44,8 +39,8 @@ async function generateWithHorde(prompt, { w, h }, onStatus) {
       nsfw: false,
       censor_nsfw: true,
       models: ['stable_diffusion'],
-      r2: true,           // return a URL instead of base64
-      shared: true,       // allows sharing for faster queue
+      r2: false,      // ✅ FIX: Set false to get base64 back reliably
+      shared: true,
     }),
   });
 
@@ -57,7 +52,7 @@ async function generateWithHorde(prompt, { w, h }, onStatus) {
   const { id } = await submitRes.json();
   if (!id) throw new Error('No job ID returned from AI Horde.');
 
-  // 2. Poll until done
+  // Poll until done
   let attempts = 0;
   while (attempts < 60) {
     await sleep(3000);
@@ -71,14 +66,13 @@ async function generateWithHorde(prompt, { w, h }, onStatus) {
     if (check.faulted) throw new Error('AI Horde generation failed. Try a different prompt.');
     if (check.done) break;
 
-    const pos  = check.queue_position ?? '?';
+    const pos = check.queue_position ?? '?';
     const wait = check.wait_time ?? '?';
     onStatus(`Queue position: ${pos} · ~${wait}s remaining…`);
   }
 
   if (attempts >= 60) throw new Error('Timed out after 3 minutes. Please try again.');
 
-  // 3. Get result
   onStatus('Fetching result…');
   const statusRes = await fetch(`${HORDE_API}/generate/status/${id}`, {
     headers: { 'apikey': ANON_KEY, 'Client-Agent': 'SmartCityAI:1.0:github.com' },
@@ -87,21 +81,22 @@ async function generateWithHorde(prompt, { w, h }, onStatus) {
 
   const gen = status.generations?.[0];
   if (!gen?.img) throw new Error('No image returned. Please try again.');
-  return gen.img; // URL
+
+  // ✅ FIX: Use helper to handle both base64 and URL
+  return buildImageSrc(gen.img);
 }
 
 export default function ImageGenerator() {
-  const [prompt, setPrompt]     = useState('');
-  const [style, setStyle]       = useState(STYLES[0].value);
-  const [size, setSize]         = useState(SIZES[0]);
+  const [prompt, setPrompt] = useState('');
   const [imageUrl, setImageUrl] = useState(null);
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [progress, setProgress] = useState(0);
   const [statusMsg, setStatusMsg] = useState('');
+  const [history, setHistory] = useState([]);
 
   const progressRef = useRef(null);
-  const cancelRef   = useRef(false);
+  const cancelRef = useRef(false);
 
   useEffect(() => () => clearInterval(progressRef.current), []);
 
@@ -122,8 +117,7 @@ export default function ImageGenerator() {
     }, 1500);
 
     try {
-      const finalPrompt = trimmed + style;
-      const url = await generateWithHorde(finalPrompt, size, (msg) => {
+      const url = await generateWithHorde(trimmed, { w: 512, h: 512 }, (msg) => {
         if (!cancelRef.current) setStatusMsg(msg);
       });
 
@@ -132,6 +126,10 @@ export default function ImageGenerator() {
         setProgress(100);
         setImageUrl(url);
         setStatusMsg('');
+        setHistory(prev => [
+          { id: Date.now(), imageUrl: url, prompt: trimmed },
+          ...prev
+        ]);
       }
     } catch (err) {
       if (!cancelRef.current) setError(err.message);
@@ -141,18 +139,13 @@ export default function ImageGenerator() {
     }
   };
 
+  // ✅ FIX: Download works for both base64 data URIs and external URLs
   const downloadImage = async () => {
     if (!imageUrl) return;
-    try {
-      const res  = await fetch(imageUrl);
-      const blob = await res.blob();
-      const a    = document.createElement('a');
-      a.href     = URL.createObjectURL(blob);
-      a.download = `smartcity-ai-${Date.now()}.png`;
-      a.click();
-    } catch {
-      window.open(imageUrl, '_blank');
-    }
+    const a = document.createElement('a');
+    a.href = imageUrl;
+    a.download = `smartcity-ai-${Date.now()}.png`;
+    a.click();
   };
 
   const handleKeyDown = (e) => {
@@ -172,25 +165,6 @@ export default function ImageGenerator() {
         </p>
       </div>
 
-      {/* Style + Size controls */}
-      <div className="imggen-controls">
-        <div className="imggen-control-group">
-          <label htmlFor="style-select" className="imggen-control-label">Style</label>
-          <select id="style-select" className="imggen-select" value={style}
-            onChange={e => setStyle(e.target.value)} disabled={loading}>
-            {STYLES.map(s => <option key={s.label} value={s.value}>{s.label}</option>)}
-          </select>
-        </div>
-        <div className="imggen-control-group">
-          <label htmlFor="size-select" className="imggen-control-label">Size</label>
-          <select id="size-select" className="imggen-select" value={JSON.stringify(size)}
-            onChange={e => setSize(JSON.parse(e.target.value))} disabled={loading}>
-            {SIZES.map(s => <option key={s.label} value={JSON.stringify(s)}>{s.label}</option>)}
-          </select>
-        </div>
-      </div>
-
-      {/* Prompt */}
       <div className="imggen-input-wrap">
         <textarea
           id="image-prompt-input"
@@ -210,7 +184,6 @@ export default function ImageGenerator() {
         </button>
       </div>
 
-      {/* Progress */}
       {loading && (
         <div className="imggen-progress-wrap">
           <div className="imggen-progress-bar" style={{ width: `${progress}%` }} />
@@ -218,7 +191,6 @@ export default function ImageGenerator() {
         </div>
       )}
 
-      {/* Error */}
       {error && !loading && (
         <div className="imggen-error">
           <span>⚠️</span>
@@ -231,7 +203,6 @@ export default function ImageGenerator() {
         </div>
       )}
 
-      {/* Result */}
       {imageUrl && !loading && (
         <div className="imggen-result">
           <div className="imggen-img-wrap">
@@ -242,14 +213,13 @@ export default function ImageGenerator() {
               </button>
             </div>
           </div>
-          <p className="imggen-prompt-label">"{prompt}{style}"</p>
+          <p className="imggen-prompt-label">"{prompt}"</p>
           <button className="imggen-regen-btn" onClick={generateImage}>
             🔀 Generate Another
           </button>
         </div>
       )}
 
-      {/* Empty state */}
       {!imageUrl && !loading && !error && (
         <div className="imggen-empty">
           <div className="imggen-empty-icon">🖼️</div>
@@ -257,6 +227,35 @@ export default function ImageGenerator() {
           <p className="imggen-empty-tip">
             Powered by community GPU workers · Queue time: 30–120s · Completely free
           </p>
+        </div>
+      )}
+
+      {/* History Section */}
+      {history.length > 0 && (
+        <div className="imggen-history">
+          <h3 className="imggen-history-title">📚 Generation History</h3>
+          <div className="imggen-history-grid">
+            {history.map(item => (
+              <div key={item.id} className="imggen-history-item">
+                <img src={item.imageUrl} alt={item.prompt} className="imggen-history-img" />
+                <div className="imggen-history-overlay">
+                  <p className="imggen-history-prompt">"{item.prompt}"</p>
+                  <button 
+                    className="imggen-history-download" 
+                    onClick={() => {
+                      const a = document.createElement('a');
+                      a.href = item.imageUrl;
+                      a.download = `smartcity-ai-${item.id}.png`;
+                      a.click();
+                    }}
+                    title="Download"
+                  >
+                    ⬇
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
