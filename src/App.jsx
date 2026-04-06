@@ -13,8 +13,6 @@ const TABS = [
   { id: 'imagegen', label: '🎨 Image AI' },
 ];
 
-const HF_KEY = import.meta.env.VITE_HF_API_KEY;
-const apiKeyMissing = !HF_KEY || HF_KEY === 'your_huggingface_api_key_here';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -71,24 +69,7 @@ export default function App() {
 
         {/* ── Main Content ── */}
         <main className="main-content" role="main">
-          {/* API Key Notice */}
-          {apiKeyMissing && (
-            <div className="api-notice" role="alert">
-              <span className="api-notice-icon">🔑</span>
-              <div className="api-notice-body">
-                <p>
-                  <strong>API Key Required</strong> — To use the AI Chatbot and Image Generator,
-                  create a <code>.env.local</code> file in the project root and add:<br />
-                  <code>VITE_HF_API_KEY=your_key_here</code><br />
-                  Get a free key at{' '}
-                  <a href="https://huggingface.co/settings/tokens" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>
-                    huggingface.co/settings/tokens
-                  </a>
-                  . The dashboard cards work without a key.
-                </p>
-              </div>
-            </div>
-          )}
+
 
           {/* ── Dashboard Tab ── */}
           {activeTab === 'dashboard' && (

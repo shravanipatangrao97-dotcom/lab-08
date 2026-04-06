@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useDashboard } from '../../context/DashboardContext';
 import './Chatbot.css';
 
-const HF_API_URL = 'https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3';
+const POLLINATIONS_API_URL = 'https://text.pollinations.ai/';
 
 function buildContextString({ weather, currency, citizen, fact }) {
   const parts = [];
@@ -67,38 +67,25 @@ export default function Chatbot() {
     const prompt = `<s>[INST] ${systemPrompt}\n\nUser question: ${text} [/INST]`;
 
     try {
-      const apiKey = import.meta.env.VITE_HF_API_KEY;
-      if (!apiKey || apiKey === 'your_huggingface_api_key_here') {
-        throw new Error('No Hugging Face API key configured. Please add VITE_HF_API_KEY to your .env.local file.');
-      }
-
-      const res = await fetch(HF_API_URL, {
+      const res = await fetch(POLLINATIONS_API_URL, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          inputs: prompt,
-          parameters: {
-            max_new_tokens: 400,
-            temperature: 0.4,
-            return_full_text: false,
-          },
-        }),
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: text }
+          ],
+          model: 'mistral',
+          seed: Math.floor(Math.random() * 10000)
+        })
       });
 
       if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error ?? `API error ${res.status}`);
+        throw new Error(`AI server temporarily unavailable (Error ${res.status})`);
       }
 
-      const data = await res.json();
-      const reply = Array.isArray(data)
-        ? data[0]?.generated_text?.trim()
-        : data?.generated_text?.trim();
-
-      setMessages(prev => [...prev, { role: 'assistant', text: reply || 'Sorry, I could not generate a response.' }]);
+      const reply = await res.text();
+      setMessages(prev => [...prev, { role: 'assistant', text: reply.trim() || 'Sorry, I could not generate a response.' }]);
     } catch (err) {
       setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ Error: ${err.message}`, isError: true }]);
     } finally {
