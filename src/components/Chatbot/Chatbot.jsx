@@ -74,9 +74,7 @@ export default function Chatbot() {
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: text }
-          ],
-          model: 'mistral',
-          seed: Math.floor(Math.random() * 10000)
+          ]
         })
       });
 
